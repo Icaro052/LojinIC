@@ -2,34 +2,31 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LojinIC - Sua Loja Online</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LojinIC - Plataforma de Vendas</title>
     
-    <!-- Tailwind CSS (Estilização) -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Configuração do Tailwind -->
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'] },
-                    animation: {
-                        'fade-in': 'fadeIn 0.5s ease-out',
-                        'slide-in-right': 'slideInRight 0.3s ease-out',
-                        'slide-in-down': 'slideInDown 0.3s ease-out',
-                    },
+                    animation: { 'fade-in': 'fadeIn 0.3s ease-out', 'slide-up': 'slideUp 0.3s ease-out' },
                     keyframes: {
                         fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
-                        slideInRight: { '0%': { transform: 'translateX(100%)' }, '100%': { transform: 'translateX(0)' } },
-                        slideInDown: { '0%': { transform: 'translateY(-10px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } }
+                        slideUp: { '0%': { transform: 'translateY(20px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } }
                     }
                 }
             }
         }
     </script>
 
-    <!-- Import Map (Dependências: React, Firebase, Lucide Icons) -->
+    <!-- Ícones e Fontes -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Import Map (React + Firebase) -->
     <script type="importmap">
     {
         "imports": {
@@ -38,386 +35,330 @@
             "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
             "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js",
             "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js",
-            "firebase/analytics": "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js",
             "lucide-react": "https://esm.sh/lucide-react@0.294.0"
         }
     }
     </script>
-
-    <!-- Babel (Compilador JSX) -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
-    
+
     <style>
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+        body { -webkit-tap-highlight-color: transparent; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-900 font-sans antialiased">
+<body class="bg-slate-50 text-slate-900 font-sans antialiased selection:bg-blue-100">
     <div id="root"></div>
 
     <script type="text/babel" data-type="module">
         import React, { useState, useEffect } from 'react';
         import { createRoot } from 'react-dom/client';
         import { initializeApp } from 'firebase/app';
-        import { getAnalytics } from "firebase/analytics"; // Importando Analytics
-        import { 
-            getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, 
-            signInWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup 
-        } from 'firebase/auth';
-        import { 
-            getFirestore, collection, addDoc, query, where, onSnapshot, deleteDoc, 
-            doc, serverTimestamp, orderBy, updateDoc, setDoc, getDoc, getDocs 
-        } from 'firebase/firestore';
-        import { 
-            Store, ShoppingBag, Plus, Trash2, LogOut, ExternalLink, X, LayoutDashboard, 
-            ChevronRight, Image as ImageIcon, Package, MessageCircle, Settings, ShieldCheck, 
-            ArrowRight, Wallet, CheckCircle2, Lock, Zap, Smartphone, Globe, Copy
-        } from 'lucide-react';
+        import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+        import { getFirestore, collection, addDoc, query, where, onSnapshot, deleteDoc, doc, serverTimestamp, orderBy, updateDoc, setDoc, getDoc, getDocs } from 'firebase/firestore';
+        import { Store, ShoppingBag, Plus, Trash2, LogOut, ExternalLink, X, LayoutDashboard, ChevronRight, Package, MessageCircle, Settings, ShieldCheck, ArrowRight, Wallet, CheckCircle2, Lock, Zap, Smartphone, Globe, Copy, Menu, Search, User } from 'lucide-react';
 
-        // --- 1. CONFIGURAÇÃO DO FIREBASE ATUALIZADA ---
+        // --- CONFIGURAÇÃO FIREBASE ---
         const firebaseConfig = {
             apiKey: "AIzaSyDvAcCedeELaoqybw64-DqZboSvtZqjH04",
             authDomain: "lojinic-99d2e.firebaseapp.com",
-            databaseURL: "https://lojinic-99d2e-default-rtdb.firebaseio.com", // URL do Realtime Database adicionada
             projectId: "lojinic-99d2e",
             storageBucket: "lojinic-99d2e.firebasestorage.app",
             messagingSenderId: "170010365264",
-            appId: "1:170010365264:web:94e1b369cd38ab9ed2b055",
-            measurementId: "G-0WY10W9CLN"
+            appId: "1:170010365264:web:94e1b369cd38ab9ed2b055"
         };
 
         const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app); // Inicializando Analytics
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = 'lojinic-producao'; 
+        const APP_ID = 'lojinic-producao'; // Coleção raiz
+        const ADMIN_EMAIL = 'admin@lojinic.com';
 
-        // --- 2. UTILITÁRIOS ---
-        const formatCurrency = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
-        const getRandomProductImage = (k = 'tech') => `https://source.unsplash.com/featured/?${k},product&t=${Date.now()}`;
-        const getUiAvatar = (name, color = '0f172a') => `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${color.replace('#', '')}&color=fff&size=128&bold=true&font-size=0.33`;
-        
-        const copyToClipboard = (text) => {
-            if (navigator.clipboard && window.isSecureContext) {
-                return navigator.clipboard.writeText(text);
+        // --- UTILITÁRIOS ---
+        const formatBRL = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+        const getAvatar = (n) => `https://ui-avatars.com/api/?name=${encodeURIComponent(n)}&background=0f172a&color=fff&bold=true`;
+        const copyText = (t) => {
+            if(navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(t);
             } else {
-                const textArea = document.createElement("textarea");
-                textArea.value = text;
-                textArea.style.position = "fixed";
-                textArea.style.left = "-999999px";
-                document.body.appendChild(textArea);
-                textArea.focus();
-                textArea.select();
-                try { document.execCommand('copy'); return Promise.resolve(); } 
-                catch (err) { return Promise.reject(err); } 
-                finally { document.body.removeChild(textArea); }
+                const el = document.createElement('textarea'); el.value = t; el.style.position='fixed'; 
+                document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
             }
         };
 
-        const BRAND_BLUE_DARK = '#1e293b'; 
-        const BRAND_BLUE_LIGHT = '#3b82f6'; 
-        const LOGO_IMAGE_URL = "https://cdn-icons-png.flaticon.com/512/3081/3081559.png"; 
-
-        const handleFirebaseError = (error) => {
-            console.error("Erro Firebase:", error);
-            switch (error.code) {
-                case 'auth/invalid-credential': return "E-mail ou senha incorretos.";
-                case 'auth/user-not-found': return "Usuário não encontrado.";
-                case 'auth/wrong-password': return "Senha incorreta.";
-                case 'auth/email-already-in-use': return "Este e-mail já está em uso.";
-                case 'auth/popup-closed-by-user': return "Login cancelado.";
-                case 'auth/unauthorized-domain': return "Domínio não autorizado no Firebase Console.";
-                case 'auth/network-request-failed': return "Sem conexão com a internet.";
-                default: return `Erro: ${error.message}`;
-            }
-        };
-
-        // --- 3. APLICAÇÃO PRINCIPAL ---
+        // --- COMPONENTE PRINCIPAL ---
         function App() {
             const [user, setUser] = useState(null);
-            const [authLoading, setAuthLoading] = useState(true);
+            const [loading, setLoading] = useState(true);
             const [view, setView] = useState('landing');
-            const [currentStoreId, setCurrentStoreId] = useState(null);
-            const [notification, setNotification] = useState(null);
+            const [activeStoreId, setActiveStoreId] = useState(null);
+            const [toast, setToast] = useState(null);
+
+            const showToast = (msg, type='success') => {
+                setToast({msg, type}); setTimeout(() => setToast(null), 4000);
+            };
 
             useEffect(() => {
-                const unsubscribe = onAuthStateChanged(auth, (u) => {
-                    setUser(u);
-                    setAuthLoading(false);
+                const unsub = onAuthStateChanged(auth, (u) => {
+                    setUser(u); setLoading(false);
                 });
-                
+                // Router simples via URL Params
                 const params = new URLSearchParams(window.location.search);
-                const storeIdFromUrl = params.get('store');
-                if (storeIdFromUrl) {
-                    setCurrentStoreId(storeIdFromUrl);
+                if (params.get('store')) {
+                    setActiveStoreId(params.get('store'));
                     setView('storefront');
                 }
-                return () => unsubscribe();
+                return () => unsub();
             }, []);
 
-            const notify = (msg, type = 'success') => {
-                setNotification({ msg, type });
-                setTimeout(() => setNotification(null), 5000); 
+            const navigate = (targetView, storeId = null) => {
+                setView(targetView);
+                if (storeId) setActiveStoreId(storeId);
+                const url = storeId ? `?store=${storeId}` : window.location.pathname;
+                window.history.pushState({}, '', url);
             };
 
-            const navigateToStore = (storeId) => {
-                setCurrentStoreId(storeId);
-                setView('storefront');
-                const newUrl = `?store=${storeId}`;
-                window.history.pushState({ path: newUrl }, '', newUrl);
-            };
-
-            const navigateHome = () => {
-                setView('landing');
-                setCurrentStoreId(null);
-                const newUrl = window.location.pathname;
-                window.history.pushState({ path: newUrl }, '', newUrl);
-            };
-
-            if (authLoading) return (
-                <div className="flex h-screen items-center justify-center bg-slate-50">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
-                </div>
-            );
+            if (loading) return <div className="h-screen flex items-center justify-center"><div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div></div>;
 
             return (
-                <div className="min-h-screen relative">
-                    {notification && (
-                        <div className={`fixed top-6 right-6 z-[100] px-6 py-4 rounded-xl shadow-2xl text-white text-sm font-medium animate-bounce flex items-center gap-3 ${notification.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}>
-                            {notification.type === 'success' ? <CheckCircle2 size={20}/> : <X size={20}/>}
-                            {notification.msg}
+                <>
+                    {toast && (
+                        <div className={`fixed top-5 right-5 z-[100] px-6 py-4 rounded-xl shadow-xl text-white font-bold animate-fade-in flex items-center gap-3 ${toast.type==='error'?'bg-red-500':'bg-emerald-600'}`}>
+                            {toast.type==='error'?<X size={20}/>:<CheckCircle2 size={20}/>} {toast.msg}
                         </div>
                     )}
 
-                    {view === 'landing' && <LandingPage setView={setView} user={user} />}
-                    {view === 'login' && <AuthForm type="login" setView={setView} notify={notify} navigateHome={navigateHome}/>}
-                    {view === 'register' && <AuthForm type="register" setView={setView} notify={notify} navigateHome={navigateHome}/>}
-                    {view === 'dashboard' && user && <Dashboard user={user} setView={setView} notify={notify} navigateToStore={navigateToStore} navigateHome={navigateHome} />}
-                    {view === 'storefront' && currentStoreId && <Storefront storeId={currentStoreId} setView={setView} notify={notify} navigateHome={navigateHome} />}
-                    {view === 'all-stores' && <AllStoresList setView={setView} navigateToStore={navigateToStore} navigateHome={navigateHome} />}
-                </div>
+                    {view === 'landing' && <LandingPage user={user} navigate={navigate} />}
+                    {view === 'auth' && <AuthPage navigate={navigate} showToast={showToast} />}
+                    {view === 'dashboard' && user && <Dashboard user={user} navigate={navigate} showToast={showToast} />}
+                    {view === 'storefront' && activeStoreId && <Storefront storeId={activeStoreId} navigate={navigate} showToast={showToast} />}
+                    {view === 'directory' && <Directory navigate={navigate} />}
+                </>
             );
         }
 
-        // --- COMPONENTES ---
-
-        function LandingPage({ setView, user }) {
+        // --- 1. LANDING PAGE ---
+        function LandingPage({ user, navigate }) {
             return (
-                <div className="flex flex-col min-h-screen bg-white">
-                    <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100">
-                        <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
-                            <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition" onClick={() => setView('landing')}>
-                                <img src={LOGO_IMAGE_URL} alt="Logo" className="h-10 w-10 object-contain" />
-                                <span className="text-xl font-extrabold tracking-tight text-slate-900">Lojin<span className="text-blue-600">IC</span></span>
-                            </div>
-                            <nav className="flex items-center gap-4">
-                                <button onClick={() => setView('all-stores')} className="text-slate-600 hover:text-blue-600 font-bold text-sm flex items-center gap-1"><Globe size={16}/> Lojas</button>
-                                {user ? (
-                                    <button onClick={() => setView('dashboard')} className="bg-slate-900 text-white px-6 py-2.5 rounded-full hover:bg-slate-800 transition text-sm font-bold shadow-lg">Meu Painel</button>
-                                ) : (
-                                    <div className="flex gap-3">
-                                        <button onClick={() => setView('login')} className="text-slate-700 hover:text-slate-900 font-bold text-sm hidden sm:block">Login</button>
-                                        <button onClick={() => setView('register')} className="bg-blue-600 text-white px-6 py-2.5 rounded-full hover:bg-blue-700 transition text-sm font-bold shadow-lg">Criar Loja</button>
-                                    </div>
-                                )}
-                            </nav>
+                <div className="min-h-screen bg-white flex flex-col">
+                    <header className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b py-4 px-6 flex justify-between items-center">
+                        <div className="flex items-center gap-2 font-black text-xl tracking-tighter cursor-pointer" onClick={()=>navigate('landing')}>
+                            <div className="bg-blue-600 text-white p-1 rounded">LJ</div> LojinIC
+                        </div>
+                        <div className="flex gap-3">
+                            <button onClick={()=>navigate('directory')} className="text-sm font-bold text-slate-600 hover:text-blue-600">Lojas</button>
+                            {user ? 
+                                <button onClick={()=>navigate('dashboard')} className="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-bold">Painel</button> :
+                                <button onClick={()=>navigate('auth')} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700">Entrar</button>
+                            }
                         </div>
                     </header>
-                    <main>
-                        <div className="relative pt-20 pb-32 overflow-hidden text-center px-4">
-                            <div className="absolute inset-0 bg-slate-50 -z-10"><div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-bl from-blue-50 to-transparent"></div></div>
-                            <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-8 border border-blue-100 shadow-sm"><Zap size={14} /> A plataforma mais rápida</div>
-                            <h1 className="text-5xl md:text-7xl font-black tracking-tight text-slate-900 mb-6 leading-tight">Venda online com <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">Profissionalismo</span>.</h1>
-                            <p className="text-xl text-slate-500 mb-10 max-w-2xl mx-auto">Crie seu catálogo digital em segundos, receba pedidos no WhatsApp e gerencie tudo em um só lugar.</p>
-                            <div className="flex justify-center gap-4">
-                                <button onClick={() => setView('register')} className="bg-slate-900 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-slate-800 transition shadow-xl flex items-center gap-2">Começar Agora <ArrowRight size={20}/></button>
-                                <button onClick={() => setView('all-stores')} className="bg-white text-slate-700 px-8 py-4 rounded-xl font-bold text-lg hover:bg-slate-50 border border-slate-200">Ver Lojas</button>
-                            </div>
-                        </div>
-                        <div className="bg-slate-900 text-white py-24 text-center">
-                             <h2 className="text-3xl font-bold mb-4">Tudo o que você precisa</h2>
-                             <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto px-4 mt-12">
-                                 <div className="p-6 bg-slate-800 rounded-2xl"><Smartphone className="mx-auto mb-4 text-blue-400" size={40}/><h3 className="font-bold text-xl mb-2">100% Mobile</h3><p className="text-slate-400">Funciona perfeitamente em qualquer celular.</p></div>
-                                 <div className="p-6 bg-slate-800 rounded-2xl"><MessageCircle className="mx-auto mb-4 text-green-400" size={40}/><h3 className="font-bold text-xl mb-2">Venda no Zap</h3><p className="text-slate-400">Seus clientes enviam o pedido pronto para seu WhatsApp.</p></div>
-                                 <div className="p-6 bg-slate-800 rounded-2xl"><Lock className="mx-auto mb-4 text-amber-400" size={40}/><h3 className="font-bold text-xl mb-2">Seguro</h3><p className="text-slate-400">Seus dados protegidos com tecnologia Google.</p></div>
-                             </div>
-                        </div>
+                    <main className="flex-1 flex flex-col items-center justify-center text-center px-4 py-20 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-50 via-white to-white">
+                        <span className="bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1 rounded-full mb-6 uppercase tracking-wide">Venda pelo WhatsApp</span>
+                        <h1 className="text-5xl md:text-7xl font-black text-slate-900 mb-6 leading-tight">Sua loja online <br/><span className="text-blue-600">em segundos</span>.</h1>
+                        <p className="text-lg text-slate-500 max-w-2xl mb-10">Crie seu catálogo, compartilhe o link e receba pedidos organizados no seu WhatsApp. Sem taxas por venda.</p>
+                        <button onClick={()=>navigate(user ? 'dashboard' : 'auth')} className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-bold text-lg shadow-xl shadow-slate-200 hover:scale-105 transition transform flex items-center gap-2">
+                            Criar Minha Loja <ArrowRight size={20}/>
+                        </button>
                     </main>
-                </div>
-            );
-        }
-
-        function AuthForm({ type, setView, notify, navigateHome }) {
-            const [email, setEmail] = useState('');
-            const [password, setPassword] = useState('');
-            const [storeName, setStoreName] = useState('');
-            const [selectedPlan, setSelectedPlan] = useState('monthly'); 
-            const [loading, setLoading] = useState(false);
-
-            const checkOrCreateStore = async (user, name = null, plan = 'monthly') => {
-                const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'stores'), where('ownerId', '==', user.uid));
-                const querySnapshot = await getDocs(q);
-                if (querySnapshot.empty) {
-                    const defaultName = name || user.displayName || "Minha Loja";
-                    const storeSlug = defaultName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'stores'), {
-                        ownerId: user.uid, name: defaultName, slug: storeSlug,
-                        logoUrl: getUiAvatar(defaultName, BRAND_BLUE_DARK), themeColor: BRAND_BLUE_DARK, whatsapp: '',
-                        plan: plan, paymentStatus: 'pending', createdAt: serverTimestamp()
-                    });
-                }
-            };
-
-            const handleGoogleLogin = async () => {
-                setLoading(true);
-                try {
-                    const provider = new GoogleAuthProvider();
-                    const result = await signInWithPopup(auth, provider);
-                    await checkOrCreateStore(result.user);
-                    notify('Login realizado!', 'success');
-                    setView('dashboard');
-                } catch (error) { notify(handleFirebaseError(error), 'error'); } 
-                finally { setLoading(false); }
-            };
-
-            const handleSubmit = async (e) => {
-                e.preventDefault();
-                setLoading(true);
-                try {
-                    if (type === 'register') {
-                        const cred = await createUserWithEmailAndPassword(auth, email, password);
-                        await updateProfile(cred.user, { displayName: storeName });
-                        await checkOrCreateStore(cred.user, storeName, selectedPlan);
-                        notify('Conta criada!', 'success');
-                    } else {
-                        await signInWithEmailAndPassword(auth, email, password);
-                        notify('Bem-vindo!', 'success');
-                    }
-                    setView('dashboard');
-                } catch (error) { notify(handleFirebaseError(error), 'error'); } 
-                finally { setLoading(false); }
-            };
-
-            return (
-                <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-12">
-                    <div className="bg-white p-10 rounded-3xl shadow-xl w-full max-w-md border border-slate-100 relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 to-cyan-500"></div>
-                        <div className="text-center mb-8">
-                            <img src={LOGO_IMAGE_URL} className="h-12 object-contain mx-auto mb-4" />
-                            <h2 className="text-2xl font-bold text-slate-900">{type === 'login' ? 'Acessar Painel' : 'Criar Loja'}</h2>
-                        </div>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            {type === 'register' && (
-                                <>
-                                <input type="text" required className="w-full px-4 py-3 bg-slate-50 border rounded-xl outline-none focus:border-blue-500" placeholder="Nome da Loja" value={storeName} onChange={(e) => setStoreName(e.target.value)} />
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div onClick={() => setSelectedPlan('monthly')} className={`cursor-pointer border-2 rounded-xl p-3 text-center ${selectedPlan === 'monthly' ? 'border-blue-600 bg-blue-50' : 'border-slate-100'}`}><p className="font-bold text-sm">Mensal</p><p className="text-xs">R$ 25</p></div>
-                                    <div onClick={() => setSelectedPlan('annual')} className={`cursor-pointer border-2 rounded-xl p-3 text-center ${selectedPlan === 'annual' ? 'border-blue-600 bg-blue-50' : 'border-slate-100'}`}><p className="font-bold text-sm">Anual</p><p className="text-xs text-green-600">-20%</p></div>
+                    <div className="bg-slate-50 py-16 border-t border-slate-100">
+                        <div className="max-w-5xl mx-auto px-4 grid md:grid-cols-3 gap-8">
+                            {[
+                                {icon: Smartphone, title: "100% Mobile", txt: "Gerencie tudo pelo celular."},
+                                {icon: Zap, title: "Rápido", txt: "Seus clientes não precisam de app."},
+                                {icon: Lock, title: "Seguro", txt: "Tecnologia Google Cloud Platform."}
+                            ].map((i,k)=>(
+                                <div key={k} className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 text-center">
+                                    <i.icon className="mx-auto mb-4 text-blue-600" size={32}/>
+                                    <h3 className="font-bold text-lg mb-2">{i.title}</h3>
+                                    <p className="text-slate-500 text-sm">{i.txt}</p>
                                 </div>
-                                </>
-                            )}
-                            <input type="email" required className="w-full px-4 py-3 bg-slate-50 border rounded-xl outline-none focus:border-blue-500" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} />
-                            <input type="password" required className="w-full px-4 py-3 bg-slate-50 border rounded-xl outline-none focus:border-blue-500" placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} />
-                            <button disabled={loading} className="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold hover:bg-slate-800 transition">{loading ? '...' : (type === 'login' ? 'Entrar' : 'Cadastrar')}</button>
-                        </form>
-                        <div className="my-6 flex items-center"><div className="flex-1 border-t"></div><span className="px-3 text-xs text-slate-400">OU</span><div className="flex-1 border-t"></div></div>
-                        <button onClick={handleGoogleLogin} className="w-full border-2 border-slate-100 py-3 rounded-xl font-bold text-slate-600 hover:bg-slate-50 flex items-center justify-center gap-2"><Globe size={18}/> Google</button>
-                        <p className="mt-6 text-center text-sm"><button onClick={() => setView(type === 'login' ? 'register' : 'login')} className="text-blue-600 font-bold hover:underline">{type === 'login' ? 'Criar conta' : 'Fazer login'}</button></p>
-                        <button onClick={navigateHome} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><X size={20}/></button>
+                            ))}
+                        </div>
                     </div>
                 </div>
             );
         }
 
-        function Dashboard({ user, setView, notify, navigateToStore, navigateHome }) {
-            const isAdmin = user.email === 'admin@lojinic.com'; 
+        // --- 2. AUTENTICAÇÃO ---
+        function AuthPage({ navigate, showToast }) {
+            const [isRegister, setIsRegister] = useState(false);
+            const [loading, setLoading] = useState(false);
+            const [form, setForm] = useState({email:'', pass:'', name:''});
+
+            const handleAuth = async (e) => {
+                e.preventDefault(); setLoading(true);
+                try {
+                    let user;
+                    if(isRegister) {
+                        const cred = await createUserWithEmailAndPassword(auth, form.email, form.pass);
+                        user = cred.user;
+                        await updateProfile(user, {displayName: form.name});
+                        await createStoreDoc(user, form.name);
+                        showToast("Conta criada com sucesso!");
+                    } else {
+                        const cred = await signInWithEmailAndPassword(auth, form.email, form.pass);
+                        user = cred.user;
+                        showToast("Bem-vindo de volta!");
+                    }
+                    navigate('dashboard');
+                } catch(err) {
+                    console.error(err);
+                    showToast("Erro na autenticação. Verifique os dados.", "error");
+                } finally { setLoading(false); }
+            };
+
+            const handleGoogle = async () => {
+                try {
+                    const res = await signInWithPopup(auth, new GoogleAuthProvider());
+                    await createStoreDoc(res.user, res.user.displayName);
+                    navigate('dashboard');
+                } catch(e) { 
+                    console.error(e);
+                    showToast("Erro no Google Login", "error"); 
+                }
+            };
+
+            const createStoreDoc = async (u, name) => {
+                const q = query(collection(db, 'artifacts', APP_ID, 'public', 'data', 'stores'), where('ownerId', '==', u.uid));
+                const snap = await getDocs(q);
+                if(snap.empty) {
+                    await addDoc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'stores'), {
+                        ownerId: u.uid, name: name || "Minha Loja", 
+                        whatsapp: "", themeColor: "#0f172a", logoUrl: getAvatar(name),
+                        paymentStatus: 'pending', createdAt: serverTimestamp()
+                    });
+                }
+            };
+
+            return (
+                <div className="min-h-screen flex items-center justify-center bg-slate-100 px-4">
+                    <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md animate-slide-up">
+                        <h2 className="text-2xl font-bold text-center mb-6">{isRegister ? 'Criar Loja' : 'Acessar Painel'}</h2>
+                        <form onSubmit={handleAuth} className="space-y-4">
+                            {isRegister && <input required className="w-full border p-3 rounded-xl" placeholder="Nome da Loja" value={form.name} onChange={e=>setForm({...form, name:e.target.value})}/>}
+                            <input required type="email" className="w-full border p-3 rounded-xl" placeholder="E-mail" value={form.email} onChange={e=>setForm({...form, email:e.target.value})}/>
+                            <input required type="password" className="w-full border p-3 rounded-xl" placeholder="Senha" value={form.pass} onChange={e=>setForm({...form, pass:e.target.value})}/>
+                            <button disabled={loading} className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition">{loading ? '...' : (isRegister ? 'Cadastrar' : 'Entrar')}</button>
+                        </form>
+                        <div className="my-6 border-t border-slate-100 pt-6">
+                            <button onClick={handleGoogle} className="w-full border border-slate-200 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-50">
+                                <Globe size={18} className="text-blue-500"/> Entrar com Google
+                            </button>
+                        </div>
+                        <p className="text-center text-sm text-slate-500">
+                            {isRegister ? 'Já tem conta?' : 'Não tem loja?'}
+                            <button onClick={()=>setIsRegister(!isRegister)} className="text-blue-600 font-bold ml-1 hover:underline">{isRegister ? 'Fazer Login' : 'Criar agora'}</button>
+                        </p>
+                        <button onClick={()=>navigate('landing')} className="block mx-auto mt-4 text-xs text-slate-400 hover:text-slate-600">Voltar ao início</button>
+                    </div>
+                </div>
+            );
+        }
+
+        // --- 3. DASHBOARD (LOJISTA & ADMIN) ---
+        function Dashboard({ user, navigate, showToast }) {
+            const isAdmin = user.email === ADMIN_EMAIL;
+            const [store, setStore] = useState(null);
             const [products, setProducts] = useState([]);
-            const [storeData, setStoreData] = useState(null);
-            const [activeTab, setActiveTab] = useState('products'); 
-            const [isAdding, setIsAdding] = useState(false);
-            const [newProdName, setNewProdName] = useState('');
-            const [newProdPrice, setNewProdPrice] = useState('');
-            const [newProdImage, setNewProdImage] = useState('');
+            const [tab, setTab] = useState('products');
+            const [adding, setAdding] = useState(false);
+            const [newProd, setNewProd] = useState({name:'', price:'', img:''});
             
-            const [settingsName, setSettingsName] = useState('');
-            const [settingsWhatsapp, setSettingsWhatsapp] = useState('');
-            const [settingsColor, setSettingsColor] = useState(BRAND_BLUE_DARK);
-            
-            const [adminBankInfo, setAdminBankInfo] = useState(null);
-            const [adminBankConfig, setAdminBankConfig] = useState({ pixKey: '' });
-            const [allSubscriptions, setAllSubscriptions] = useState([]);
+            // Admin States
+            const [adminStores, setAdminStores] = useState([]);
+            const [pixKey, setPixKey] = useState('');
 
             useEffect(() => {
-                if (isAdmin) {
-                    getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'saas_config')).then(s => s.exists() && setAdminBankConfig(s.data()));
-                    return onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'stores'), orderBy('createdAt', 'desc')), (snap) => {
-                        setAllSubscriptions(snap.docs.map(d => ({id: d.id, ...d.data()})));
-                    });
+                if(isAdmin) {
+                    // Carregar dados Admin
+                    const unsub1 = onSnapshot(query(collection(db, 'artifacts', APP_ID, 'public', 'data', 'stores'), orderBy('createdAt', 'desc')), s => setAdminStores(s.docs.map(d=>({id:d.id, ...d.data()}))));
+                    getDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'saas_config')).then(s => s.exists() && setPixKey(s.data().pixKey || ''));
+                    return () => unsub1();
                 } else {
-                    const unsub = onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'stores'), where('ownerId', '==', user.uid)), (snap) => {
-                        if (!snap.empty) {
-                            const data = snap.docs[0].data();
-                            setStoreData({ id: snap.docs[0].id, ...data });
-                            setSettingsName(data.name); setSettingsWhatsapp(data.whatsapp || ''); setSettingsColor(data.themeColor || BRAND_BLUE_DARK);
+                    // Carregar Loja do Usuário
+                    const q = query(collection(db, 'artifacts', APP_ID, 'public', 'data', 'stores'), where('ownerId', '==', user.uid));
+                    const unsub2 = onSnapshot(q, (snap) => {
+                        if(!snap.empty) {
+                            const d = snap.docs[0];
+                            setStore({id: d.id, ...d.data()});
+                            // Carregar Pix do Admin para mostrar ao usuário
+                            getDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'saas_config')).then(s => s.exists() && setPixKey(s.data().pixKey));
                         }
                     });
-                    getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'saas_config')).then(s => s.exists() && setAdminBankInfo(s.data()));
-                    return unsub;
+                    return () => unsub2();
                 }
-            }, [user, isAdmin]);
+            }, [user]);
 
             useEffect(() => {
-                if (storeData) {
-                    return onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'products'), where('storeId', '==', storeData.id), orderBy('createdAt', 'desc')), (snap) => {
-                        setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-                    });
+                if(store) {
+                    const q = query(collection(db, 'artifacts', APP_ID, 'public', 'data', 'products'), where('storeId', '==', store.id), orderBy('createdAt', 'desc'));
+                    const unsub = onSnapshot(q, s => setProducts(s.docs.map(d=>({id:d.id, ...d.data()}))));
+                    return () => unsub();
                 }
-            }, [storeData]);
+            }, [store]);
 
-            // Handlers Admin Master
-            const handleSaveAdminConfig = async (e) => { e.preventDefault(); await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'saas_config'), { pixKey: adminBankConfig.pixKey }, { merge: true }); notify('Pix Admin Salvo!'); };
-            const toggleStatus = async (id, status) => { await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'stores', id), { paymentStatus: status === 'active' ? 'pending' : 'active' }); };
-
-            // Handlers Lojista
-            const handleAddProduct = async (e) => {
+            const saveProduct = async (e) => {
                 e.preventDefault();
                 try {
-                    const img = newProdImage.trim() || getRandomProductImage(newProdName);
-                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'products'), {
-                        storeId: storeData.id, name: newProdName, price: parseFloat(newProdPrice), image: img, createdAt: serverTimestamp()
+                    const img = newProd.img.trim() || `https://source.unsplash.com/featured/?${newProd.name},product&t=${Date.now()}`;
+                    await addDoc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'products'), {
+                        storeId: store.id, name: newProd.name, price: parseFloat(newProd.price), image: img, createdAt: serverTimestamp()
                     });
-                    setIsAdding(false); setNewProdName(''); setNewProdPrice(''); setNewProdImage(''); notify('Produto criado!');
-                } catch(e) { notify('Erro ao criar.', 'error'); }
-            };
-            const handleDelete = async (id) => { if(confirm('Excluir?')) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'products', id)); };
-            const handleSaveSettings = async (e) => {
-                e.preventDefault();
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'stores', storeData.id), { name: settingsName, whatsapp: settingsWhatsapp.replace(/\D/g,''), themeColor: settingsColor });
-                notify('Salvo com sucesso!');
+                    setAdding(false); setNewProd({name:'', price:'', img:''}); showToast("Produto adicionado!");
+                } catch(e) { showToast("Erro ao salvar", "error"); }
             };
 
-            if (isAdmin) {
+            const deleteProduct = async (id) => {
+                if(confirm("Excluir produto?")) { await deleteDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'products', id)); showToast("Produto excluído."); }
+            };
+
+            const saveSettings = async (e) => {
+                e.preventDefault();
+                await updateDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'stores', store.id), {
+                    name: e.target.name.value, whatsapp: e.target.whatsapp.value.replace(/\D/g,''), themeColor: e.target.color.value
+                });
+                showToast("Configurações salvas!");
+            };
+
+            // Admin Actions
+            const toggleStoreStatus = async (id, status) => {
+                await updateDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'stores', id), { paymentStatus: status === 'active' ? 'pending' : 'active' });
+            };
+            const saveAdminPix = async () => {
+                await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'saas_config'), { pixKey }, { merge: true });
+                showToast("Chave Pix Global Atualizada!");
+            };
+
+            if(isAdmin) {
                 return (
-                    <div className="min-h-screen bg-slate-900 text-slate-100 p-8">
-                        <div className="max-w-5xl mx-auto">
+                    <div className="min-h-screen bg-slate-900 text-slate-100 p-6">
+                        <div className="max-w-6xl mx-auto">
                             <div className="flex justify-between items-center mb-8 border-b border-slate-700 pb-4">
-                                <h1 className="text-2xl font-bold">Painel Master</h1>
-                                <button onClick={() => signOut(auth)} className="text-red-400 text-sm">Sair</button>
+                                <h1 className="text-2xl font-bold flex gap-2 items-center"><LayoutDashboard/> Painel Master</h1>
+                                <button onClick={()=>signOut(auth)} className="text-red-400 font-bold text-sm">Sair</button>
                             </div>
-                            <div className="grid gap-6">
-                                <div className="bg-slate-800 p-6 rounded-xl">
-                                    <h3 className="font-bold mb-4">Configurar Pix (Recebimento)</h3>
-                                    <form onSubmit={handleSaveAdminConfig} className="flex gap-2"><input className="flex-1 bg-slate-900 border border-slate-600 rounded p-2" value={adminBankConfig.pixKey} onChange={e=>setAdminBankConfig({...adminBankConfig, pixKey:e.target.value})} placeholder="Chave Pix"/><button className="bg-blue-600 px-4 rounded font-bold">Salvar</button></form>
+                            <div className="grid md:grid-cols-3 gap-6">
+                                <div className="md:col-span-1 bg-slate-800 p-6 rounded-2xl h-fit">
+                                    <h3 className="font-bold mb-4 flex items-center gap-2"><Wallet size={18}/> Configurar Pix</h3>
+                                    <input className="w-full bg-slate-900 border border-slate-600 rounded p-2 mb-2" value={pixKey} onChange={e=>setPixKey(e.target.value)} placeholder="Chave Pix"/>
+                                    <button onClick={saveAdminPix} className="w-full bg-blue-600 hover:bg-blue-500 py-2 rounded font-bold">Salvar</button>
                                 </div>
-                                <div className="bg-slate-800 p-6 rounded-xl">
-                                    <h3 className="font-bold mb-4">Lojas ({allSubscriptions.length})</h3>
-                                    <div className="space-y-2 max-h-96 overflow-y-auto custom-scrollbar pr-2">
-                                        {allSubscriptions.map(s => (
-                                            <div key={s.id} className="flex justify-between items-center bg-slate-900 p-3 rounded border border-slate-700">
-                                                <div><p className="font-bold">{s.name}</p><span className={`text-xs ${s.paymentStatus==='active'?'text-green-400':'text-yellow-500'}`}>{s.paymentStatus.toUpperCase()}</span></div>
-                                                <button onClick={()=>toggleStatus(s.id, s.paymentStatus)} className="text-xs border px-2 py-1 rounded hover:bg-white/10">{s.paymentStatus==='active'?'Bloquear':'Liberar'}</button>
+                                <div className="md:col-span-2 bg-slate-800 p-6 rounded-2xl">
+                                    <h3 className="font-bold mb-4">Lojas Cadastradas ({adminStores.length})</h3>
+                                    <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+                                        {adminStores.map(s => (
+                                            <div key={s.id} className="flex justify-between items-center bg-slate-900 p-4 rounded-xl border border-slate-700">
+                                                <div>
+                                                    <div className="font-bold text-lg">{s.name}</div>
+                                                    <div className={`text-xs font-bold uppercase ${s.paymentStatus==='active'?'text-green-400':'text-amber-500'}`}>{s.paymentStatus}</div>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <button onClick={()=>navigate('storefront', s.id)} className="p-2 bg-slate-700 rounded hover:bg-slate-600"><ExternalLink size={16}/></button>
+                                                    <button onClick={()=>toggleStoreStatus(s.id, s.paymentStatus)} className={`px-3 py-2 rounded font-bold text-xs ${s.paymentStatus==='active'?'bg-red-500/20 text-red-400':'bg-green-500/20 text-green-400'}`}>
+                                                        {s.paymentStatus==='active' ? 'Bloquear' : 'Aprovar'}
+                                                    </button>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
@@ -428,80 +369,95 @@
                 );
             }
 
-            if (!storeData) return <div className="p-20 text-center text-slate-400">Carregando sua loja...</div>;
+            if(!store) return <div className="h-screen flex items-center justify-center text-slate-400">Carregando painel...</div>;
 
             return (
-                <div className="min-h-screen bg-slate-100 pb-20">
-                    <header className="bg-white border-b sticky top-0 z-30 px-4 h-16 flex items-center justify-between max-w-7xl mx-auto w-full">
-                         <div className="flex items-center gap-3">
-                             <img src={storeData.logoUrl} className="w-8 h-8 rounded object-cover"/>
-                             <div><h1 className="font-bold text-sm">{storeData.name}</h1><span className={`text-[10px] px-1.5 rounded ${storeData.paymentStatus==='active'?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}`}>{storeData.paymentStatus==='active'?'Ativo':'Pendente'}</span></div>
-                         </div>
-                         <div className="flex gap-2">
-                             {storeData.paymentStatus === 'active' && <button onClick={() => navigateToStore(storeData.id)} className="text-sm text-blue-600 font-bold flex items-center gap-1"><ExternalLink size={14}/> Ver Loja</button>}
-                             <button onClick={() => signOut(auth)}><LogOut size={18} className="text-slate-400 hover:text-red-500"/></button>
-                         </div>
+                <div className="min-h-screen bg-slate-50 pb-20">
+                    <header className="bg-white border-b px-4 h-16 flex justify-between items-center sticky top-0 z-30">
+                        <div className="flex items-center gap-3">
+                            <img src={store.logoUrl} className="w-9 h-9 rounded-lg bg-slate-200 object-cover"/>
+                            <div><div className="font-bold text-sm leading-tight">{store.name}</div><div className={`text-[10px] font-bold uppercase ${store.paymentStatus==='active'?'text-green-600':'text-amber-600'}`}>{store.paymentStatus==='active'?'Ativo':'Pendente'}</div></div>
+                        </div>
+                        <div className="flex gap-2">
+                            {store.paymentStatus==='active' && <button onClick={()=>navigate('storefront', store.id)} className="text-blue-600 font-bold text-sm flex items-center gap-1"><ExternalLink size={16}/> <span className="hidden sm:inline">Ver Loja</span></button>}
+                            <button onClick={()=>signOut(auth)} className="p-2 text-slate-400 hover:text-red-500"><LogOut size={18}/></button>
+                        </div>
                     </header>
-                    <main className="max-w-7xl mx-auto px-4 py-8">
-                        <div className="flex gap-2 mb-6 overflow-x-auto">
-                            {['products', 'subscription', 'settings'].map(tab => (
-                                <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2 rounded-lg text-sm font-bold capitalize ${activeTab === tab ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}>
-                                    {tab === 'products' ? 'Produtos' : tab === 'subscription' ? 'Assinatura' : 'Ajustes'}
-                                </button>
+                    <main className="max-w-3xl mx-auto px-4 py-6">
+                        <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
+                            {[{id:'products', l:'Produtos'},{id:'sub', l:'Assinatura'},{id:'settings', l:'Ajustes'}].map(t => (
+                                <button key={t.id} onClick={()=>setTab(t.id)} className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition ${tab===t.id ? 'bg-slate-900 text-white shadow-lg' : 'bg-white text-slate-500 border'}`}>{t.l}</button>
                             ))}
                         </div>
-                        
-                        {activeTab === 'products' && (
+
+                        {tab === 'products' && (
                             <div className="animate-fade-in">
-                                {storeData.paymentStatus !== 'active' ? (
-                                    <div className="bg-white p-10 rounded-xl text-center shadow-sm"><Lock className="mx-auto mb-4 text-slate-300" size={40}/><h3 className="font-bold text-lg">Loja Bloqueada</h3><p className="text-slate-500 mb-4">Pague a assinatura para liberar.</p><button onClick={() => setActiveTab('subscription')} className="text-blue-600 font-bold hover:underline">Ir para Pagamento</button></div>
+                                {store.paymentStatus!=='active' ? (
+                                    <div className="text-center p-8 bg-white rounded-2xl border shadow-sm">
+                                        <Lock className="mx-auto text-slate-300 mb-4" size={40}/>
+                                        <h3 className="font-bold text-lg">Loja Bloqueada</h3>
+                                        <p className="text-slate-500 text-sm mb-4">Ative sua assinatura para gerenciar produtos.</p>
+                                        <button onClick={()=>setTab('sub')} className="text-blue-600 font-bold underline">Resolver agora</button>
+                                    </div>
                                 ) : (
                                     <>
-                                    <div className="flex justify-between mb-4"><h2 className="font-bold text-lg">Seu Catálogo</h2><button onClick={() => setIsAdding(!isAdding)} className="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2">{isAdding?<X size={16}/>:<Plus size={16}/>} {isAdding?'Cancelar':'Novo'}</button></div>
-                                    {isAdding && (
-                                        <div className="bg-white p-6 rounded-xl shadow-lg border border-slate-100 mb-6 animate-slide-in-down">
-                                            <form onSubmit={handleAddProduct} className="space-y-4">
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <input required className="border p-2 rounded" placeholder="Nome" value={newProdName} onChange={e=>setNewProdName(e.target.value)}/>
-                                                    <input required type="number" className="border p-2 rounded" placeholder="Preço" value={newProdPrice} onChange={e=>setNewProdPrice(e.target.value)}/>
+                                        <button onClick={()=>setAdding(!adding)} className="w-full py-3 border-2 border-dashed border-slate-300 rounded-xl text-slate-500 font-bold hover:border-blue-500 hover:text-blue-600 mb-6 flex justify-center items-center gap-2 transition">
+                                            {adding ? <X/> : <Plus/>} {adding ? 'Cancelar' : 'Novo Produto'}
+                                        </button>
+                                        
+                                        {adding && (
+                                            <form onSubmit={saveProduct} className="bg-white p-6 rounded-2xl shadow-lg mb-6 animate-slide-up border border-slate-100">
+                                                <div className="grid grid-cols-2 gap-4 mb-4">
+                                                    <div className="col-span-2"><label className="text-xs font-bold text-slate-400 uppercase">Nome</label><input required className="w-full border p-2 rounded-lg" value={newProd.name} onChange={e=>setNewProd({...newProd, name:e.target.value})}/></div>
+                                                    <div><label className="text-xs font-bold text-slate-400 uppercase">Preço</label><input required type="number" step="0.01" className="w-full border p-2 rounded-lg" value={newProd.price} onChange={e=>setNewProd({...newProd, price:e.target.value})}/></div>
+                                                    <div><label className="text-xs font-bold text-slate-400 uppercase">Imagem (URL)</label><input className="w-full border p-2 rounded-lg" placeholder="Opcional" value={newProd.img} onChange={e=>setNewProd({...newProd, img:e.target.value})}/></div>
                                                 </div>
-                                                <button className="w-full bg-blue-600 text-white py-2 rounded font-bold">Salvar</button>
+                                                <button className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700">Salvar Produto</button>
                                             </form>
+                                        )}
+
+                                        <div className="space-y-3">
+                                            {products.map(p => (
+                                                <div key={p.id} className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center gap-4">
+                                                    <img src={p.image} className="w-16 h-16 rounded-lg bg-slate-100 object-cover"/>
+                                                    <div className="flex-1">
+                                                        <div className="font-bold">{p.name}</div>
+                                                        <div className="text-green-600 font-bold">{formatBRL(p.price)}</div>
+                                                    </div>
+                                                    <button onClick={()=>deleteProduct(p.id)} className="p-2 text-slate-300 hover:text-red-500"><Trash2 size={18}/></button>
+                                                </div>
+                                            ))}
+                                            {products.length===0 && !adding && <div className="text-center text-slate-400 py-10">Nenhum produto ainda.</div>}
                                         </div>
-                                    )}
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {products.map(p => (
-                                            <div key={p.id} className="bg-white p-3 rounded-xl border flex gap-3 items-center shadow-sm">
-                                                <img src={p.image} className="w-16 h-16 rounded object-cover bg-slate-100"/>
-                                                <div className="flex-1"><h4 className="font-bold text-sm">{p.name}</h4><p className="text-green-600 font-bold text-sm">{formatCurrency(p.price)}</p></div>
-                                                <button onClick={() => handleDelete(p.id)} className="text-slate-300 hover:text-red-500"><Trash2 size={18}/></button>
-                                            </div>
-                                        ))}
-                                    </div>
                                     </>
                                 )}
                             </div>
                         )}
 
-                        {activeTab === 'subscription' && (
-                            <div className="max-w-md mx-auto bg-white p-8 rounded-2xl shadow-sm border animate-fade-in text-center">
-                                <div className="bg-blue-50 text-blue-600 p-4 rounded-full inline-block mb-4"><Wallet size={32}/></div>
-                                <h2 className="text-xl font-bold mb-2">Pagamento</h2>
-                                <div className="bg-slate-50 p-4 rounded-xl border mb-4">
-                                    <p className="text-xs text-slate-500 uppercase mb-1">Chave Pix</p>
-                                    <div onClick={() => {copyToClipboard(adminBankInfo?.pixKey); notify('Copiado!');}} className="cursor-pointer bg-white border p-2 rounded font-mono font-bold flex items-center justify-center gap-2 hover:border-blue-400">{adminBankInfo?.pixKey || "..."} <Copy size={14}/></div>
+                        {tab === 'sub' && (
+                            <div className="bg-white p-6 rounded-2xl shadow-sm border animate-fade-in">
+                                <div className="text-center mb-6">
+                                    <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3"><Wallet/></div>
+                                    <h2 className="font-bold text-xl">Assinatura</h2>
+                                    <p className="text-sm text-slate-500">Status: <span className={store.paymentStatus==='active'?'text-green-600 font-bold':'text-amber-600 font-bold'}>{store.paymentStatus==='active'?'ATIVA':'PENDENTE'}</span></p>
                                 </div>
-                                <div className={`p-3 rounded font-bold text-sm ${storeData.paymentStatus==='active'?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}`}>{storeData.paymentStatus==='active'?'✅ Ativo':'⏳ Aguardando'}</div>
+                                <div className="bg-slate-50 p-4 rounded-xl border mb-4">
+                                    <p className="text-xs font-bold text-slate-400 uppercase mb-2 text-center">Chave Pix para Pagamento</p>
+                                    <div onClick={()=>{copyText(pixKey); showToast("Copiado!");}} className="bg-white border-2 border-blue-100 p-3 rounded-lg text-center font-mono font-bold text-slate-700 cursor-pointer hover:border-blue-400 transition flex items-center justify-center gap-2">
+                                        {pixKey || "Chave não configurada"} <Copy size={14}/>
+                                    </div>
+                                </div>
+                                <p className="text-xs text-center text-slate-400">Após o pagamento, aguarde a liberação pelo administrador.</p>
                             </div>
                         )}
 
-                        {activeTab === 'settings' && (
-                            <div className="max-w-md mx-auto bg-white p-8 rounded-2xl shadow-sm border animate-fade-in">
-                                <form onSubmit={handleSaveSettings} className="space-y-4">
-                                    <div><label className="text-xs font-bold text-slate-500">Nome Loja</label><input className="w-full border p-2 rounded" value={settingsName} onChange={e=>setSettingsName(e.target.value)}/></div>
-                                    <div><label className="text-xs font-bold text-slate-500">WhatsApp</label><input className="w-full border p-2 rounded" value={settingsWhatsapp} onChange={e=>setSettingsWhatsapp(e.target.value)}/></div>
-                                    <div className="flex items-center gap-3"><input type="color" value={settingsColor} onChange={e=>setSettingsColor(e.target.value)} className="h-10 w-10"/><span className="text-sm font-bold">Cor da Marca</span></div>
-                                    <button className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold">Salvar</button>
+                        {tab === 'settings' && (
+                            <div className="bg-white p-6 rounded-2xl shadow-sm border animate-fade-in">
+                                <form onSubmit={saveSettings} className="space-y-4">
+                                    <div><label className="text-xs font-bold text-slate-400 uppercase">Nome da Loja</label><input name="name" defaultValue={store.name} className="w-full border p-3 rounded-xl"/></div>
+                                    <div><label className="text-xs font-bold text-slate-400 uppercase">WhatsApp (Somente números)</label><input name="whatsapp" defaultValue={store.whatsapp} placeholder="5511999999999" className="w-full border p-3 rounded-xl"/></div>
+                                    <div><label className="text-xs font-bold text-slate-400 uppercase">Cor do Tema</label><div className="flex items-center gap-2 mt-1"><input name="color" type="color" defaultValue={store.themeColor} className="h-10 w-10 rounded cursor-pointer"/><span className="text-sm text-slate-500">Escolha a cor principal</span></div></div>
+                                    <button className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold mt-4">Salvar Alterações</button>
                                 </form>
                             </div>
                         )}
@@ -510,80 +466,107 @@
             );
         }
 
-        function Storefront({ storeId, setView, notify, navigateHome }) {
+        // --- 4. LOJA PÚBLICA (STOREFRONT) ---
+        function Storefront({ storeId, navigate, showToast }) {
             const [store, setStore] = useState(null);
             const [products, setProducts] = useState([]);
             const [cart, setCart] = useState([]);
-            const [isCartOpen, setIsCartOpen] = useState(false);
-            const [checkoutStep, setCheckoutStep] = useState('cart');
-            const [customerName, setCustomerName] = useState('');
-            const [paymentMethod, setPaymentMethod] = useState('Pix');
+            const [cartOpen, setCartOpen] = useState(false);
+            const [checkoutData, setCheckoutData] = useState({name:'', method:'Pix'});
 
             useEffect(() => {
-                if(!storeId) return;
-                onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'stores', storeId), (d) => d.exists() && setStore({id: d.id, ...d.data()}));
-                onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'products'), where('storeId', '==', storeId), orderBy('createdAt', 'desc')), (s) => setProducts(s.docs.map(d=>({id: d.id, ...d.data()}))));
+                onSnapshot(doc(db, 'artifacts', APP_ID, 'public', 'data', 'stores', storeId), s => s.exists() && setStore({id:s.id, ...s.data()}));
+                onSnapshot(query(collection(db, 'artifacts', APP_ID, 'public', 'data', 'products'), where('storeId', '==', storeId), orderBy('createdAt', 'desc')), s => setProducts(s.docs.map(d=>({id:d.id, ...d.data()}))));
             }, [storeId]);
 
-            const total = cart.reduce((acc, item) => acc + item.price, 0);
-            const addToCart = (p) => { setCart([...cart, p]); notify('Adicionado!'); setIsCartOpen(true); };
+            const addToCart = (p) => { setCart([...cart, p]); showToast("Adicionado!"); setCartOpen(true); };
             const removeFromCart = (i) => setCart(cart.filter((_,idx)=>idx!==i));
-            const checkout = () => {
-                if(!store.whatsapp) { notify('Loja sem WhatsApp configurado.', 'error'); return; }
-                if(!customerName) { notify('Digite seu nome.', 'error'); return; }
-                const msg = `*PEDIDO - ${store.name}*\n👤 ${customerName}\n💳 ${paymentMethod}\n---\n${cart.map(i=>`1x ${i.name} - ${formatCurrency(i.price)}`).join('\n')}\n---\n*TOTAL: ${formatCurrency(total)}*`;
-                window.open(`https://wa.me/55${store.whatsapp}?text=${encodeURIComponent(msg)}`);
-                setCart([]); setIsCartOpen(false);
+            const total = cart.reduce((a,b) => a+b.price, 0);
+            
+            const finish = () => {
+                if(!store.whatsapp) return showToast("Loja sem WhatsApp configurado", "error");
+                if(!checkoutData.name) return showToast("Digite seu nome", "error");
+                const msg = `*PEDIDO NOVA LOJA - ${store.name}*\n--------------------------------\n👤 *Cliente:* ${checkoutData.name}\n💳 *Pagto:* ${checkoutData.method}\n--------------------------------\n${cart.map(i=>`📦 1x ${i.name} (${formatBRL(i.price)})`).join('\n')}\n--------------------------------\n💰 *TOTAL: ${formatBRL(total)}*`;
+                window.open(`https://wa.me/${store.whatsapp}?text=${encodeURIComponent(msg)}`);
+                setCart([]); setCartOpen(false);
             };
 
-            if(!store) return <div className="h-screen flex justify-center items-center"><div className="animate-spin rounded-full h-10 w-10 border-4 border-slate-200 border-t-slate-900"></div></div>;
-            const brandColor = store.themeColor || BRAND_BLUE_DARK;
+            if(!store) return <div className="h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-slate-900 border-t-transparent rounded-full"></div></div>;
 
             return (
-                <div className="min-h-screen bg-slate-50">
-                    <nav className="bg-white sticky top-0 z-40 px-4 h-16 flex items-center justify-between shadow-sm">
-                        <div className="flex items-center gap-3"><img src={store.logoUrl} className="w-10 h-10 rounded-full border"/><h1 className="font-bold">{store.name}</h1></div>
-                        <button onClick={()=>setIsCartOpen(true)} className="relative bg-slate-100 p-2 rounded-full"><ShoppingBag size={20}/>{cart.length>0 && <span style={{backgroundColor:brandColor}} className="absolute -top-1 -right-1 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full">{cart.length}</span>}</button>
-                    </nav>
-                    <div style={{backgroundColor:brandColor}} className="h-24 w-full"></div>
-                    <main className="max-w-7xl mx-auto px-4 py-8 -mt-8">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="min-h-screen bg-slate-50 font-sans">
+                    {/* Header Loja */}
+                    <div className="sticky top-0 z-30 bg-white shadow-sm px-4 h-16 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <img src={store.logoUrl} className="w-10 h-10 rounded-full border"/>
+                            <h1 className="font-bold text-slate-900 leading-tight">{store.name}</h1>
+                        </div>
+                        <div className="flex gap-2">
+                            <button onClick={()=>navigate('landing')} className="p-2 bg-slate-100 rounded-full text-slate-400"><X size={18}/></button>
+                            <button onClick={()=>setCartOpen(true)} className="relative p-2 bg-slate-100 rounded-full text-slate-700">
+                                <ShoppingBag size={20}/>
+                                {cart.length>0 && <span style={{backgroundColor:store.themeColor}} className="absolute -top-1 -right-1 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold border-2 border-white">{cart.length}</span>}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Banner Cor */}
+                    <div style={{backgroundColor: store.themeColor}} className="h-32 w-full"></div>
+
+                    {/* Grid Produtos */}
+                    <div className="px-4 -mt-10 pb-20 max-w-5xl mx-auto">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             {products.map(p => (
-                                <div key={p.id} className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition flex flex-col">
-                                    <div className="h-48 bg-slate-200"><img src={p.image} className="w-full h-full object-cover"/></div>
+                                <div key={p.id} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col h-full">
+                                    <div className="h-48 bg-slate-100 relative"><img src={p.image} className="w-full h-full object-cover"/></div>
                                     <div className="p-4 flex flex-col flex-1">
-                                        <h3 className="font-bold mb-1">{p.name}</h3>
-                                        <div className="mt-auto flex justify-between items-center border-t pt-2">
-                                            <span className="font-bold text-lg">{formatCurrency(p.price)}</span>
-                                            <button onClick={()=>addToCart(p)} style={{backgroundColor:brandColor}} className="text-white p-2 rounded-lg"><Plus size={18}/></button>
+                                        <h3 className="font-bold text-slate-800 mb-1">{p.name}</h3>
+                                        <div className="mt-auto pt-3 border-t border-slate-50 flex justify-between items-center">
+                                            <span className="font-bold text-lg text-slate-900">{formatBRL(p.price)}</span>
+                                            <button onClick={()=>addToCart(p)} style={{backgroundColor: store.themeColor}} className="text-white p-2 rounded-xl shadow-lg active:scale-95 transition"><Plus size={20}/></button>
                                         </div>
                                     </div>
                                 </div>
                             ))}
                         </div>
-                    </main>
-                    {isCartOpen && (
+                        {products.length===0 && <div className="bg-white p-8 rounded-xl text-center shadow-sm">Loja sem produtos no momento.</div>}
+                    </div>
+
+                    {/* Modal Carrinho */}
+                    {cartOpen && (
                         <div className="fixed inset-0 z-50 flex justify-end">
-                            <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={()=>setIsCartOpen(false)}></div>
+                            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={()=>setCartOpen(false)}></div>
                             <div className="w-full max-w-md bg-white z-10 shadow-2xl flex flex-col h-full animate-slide-in-right">
-                                <div className="p-4 border-b flex justify-between items-center"><h2 className="font-bold">Carrinho</h2><button onClick={()=>setIsCartOpen(false)}><X/></button></div>
-                                {checkoutStep === 'cart' ? (
-                                    <>
-                                    <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                                        {cart.map((i,idx) => (<div key={idx} className="flex gap-3 bg-slate-50 p-2 rounded border"><img src={i.image} className="w-12 h-12 rounded object-cover"/><div className="flex-1"><p className="font-bold text-sm">{i.name}</p><p className="text-xs">{formatCurrency(i.price)}</p></div><button onClick={()=>removeFromCart(idx)}><Trash2 size={16}/></button></div>))}
-                                        {cart.length===0 && <p className="text-center text-slate-400 mt-10">Vazio.</p>}
-                                    </div>
-                                    <div className="p-4 border-t"><div className="flex justify-between font-bold text-lg mb-4"><span>Total</span><span>{formatCurrency(total)}</span></div><button disabled={cart.length===0} onClick={()=>setCheckoutStep('details')} style={{backgroundColor:brandColor}} className="w-full text-white py-3 rounded-xl font-bold disabled:opacity-50">Continuar</button></div>
-                                    </>
-                                ) : (
-                                    <div className="flex-1 p-6 flex flex-col gap-4">
-                                        <div className="bg-green-50 border border-green-200 p-3 rounded text-green-800 text-sm font-bold flex items-center gap-2"><ShieldCheck size={16}/> Pagamento Seguro na Entrega</div>
-                                        <input className="border p-3 rounded-xl w-full" placeholder="Seu Nome" value={customerName} onChange={e=>setCustomerName(e.target.value)}/>
-                                        <select className="border p-3 rounded-xl w-full" value={paymentMethod} onChange={e=>setPaymentMethod(e.target.value)}><option>Pix</option><option>Dinheiro</option><option>Cartão</option></select>
-                                        <button onClick={checkout} className="mt-auto bg-[#25D366] text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg"><MessageCircle/> Enviar Pedido</button>
-                                        <button onClick={()=>setCheckoutStep('cart')} className="text-slate-500 text-sm">Voltar</button>
-                                    </div>
-                                )}
+                                <div className="p-4 border-b flex justify-between items-center bg-slate-50">
+                                    <h2 className="font-bold text-lg flex items-center gap-2"><ShoppingBag size={20}/> Carrinho</h2>
+                                    <button onClick={()=>setCartOpen(false)} className="p-1 hover:bg-slate-200 rounded"><X/></button>
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-white">
+                                    {cart.length===0 ? <div className="text-center text-slate-400 mt-10">Seu carrinho está vazio.</div> : 
+                                    cart.map((item, i) => (
+                                        <div key={i} className="flex gap-3 p-2 border rounded-xl items-center">
+                                            <img src={item.image} className="w-12 h-12 rounded-lg object-cover"/>
+                                            <div className="flex-1"><div className="font-bold text-sm">{item.name}</div><div className="text-xs text-slate-500">{formatBRL(item.price)}</div></div>
+                                            <button onClick={()=>removeFromCart(i)} className="text-red-400 p-2"><Trash2 size={16}/></button>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="p-6 border-t bg-slate-50">
+                                    <div className="flex justify-between font-bold text-xl mb-4 text-slate-800"><span>Total</span><span>{formatBRL(total)}</span></div>
+                                    {cart.length > 0 && (
+                                        <div className="space-y-3">
+                                            <input className="w-full border p-3 rounded-xl bg-white" placeholder="Seu Nome Completo" value={checkoutData.name} onChange={e=>setCheckoutData({...checkoutData, name:e.target.value})}/>
+                                            <select className="w-full border p-3 rounded-xl bg-white" value={checkoutData.method} onChange={e=>setCheckoutData({...checkoutData, method:e.target.value})}>
+                                                <option value="Pix">Pagamento via Pix</option>
+                                                <option value="Cartão">Pagamento no Cartão</option>
+                                                <option value="Dinheiro">Pagamento em Dinheiro</option>
+                                            </select>
+                                            <button onClick={finish} className="w-full bg-green-500 hover:bg-green-600 text-white py-4 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2">
+                                                <MessageCircle size={20}/> Enviar Pedido no Zap
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     )}
@@ -591,14 +574,43 @@
             );
         }
 
-        function AllStoresList({ setView, navigateToStore, navigateHome }) {
+        // --- 5. DIRETÓRIO ---
+        function Directory({ navigate }) {
             const [stores, setStores] = useState([]);
-            useEffect(() => { onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'stores'), orderBy('createdAt', 'desc')), (s) => setStores(s.docs.map(d => ({id: d.id, ...d.data()})))); }, []);
+            const [term, setTerm] = useState('');
+
+            useEffect(() => {
+                const q = query(collection(db, 'artifacts', APP_ID, 'public', 'data', 'stores'), orderBy('createdAt', 'desc'));
+                const unsub = onSnapshot(q, s => setStores(s.docs.map(d=>({id:d.id, ...d.data()}))));
+                return () => unsub();
+            }, []);
+
+            const filtered = stores.filter(s => s.name.toLowerCase().includes(term.toLowerCase()));
+
             return (
-                <div className="min-h-screen bg-slate-50 p-8">
-                    <div className="max-w-6xl mx-auto">
-                        <div className="flex gap-4 items-center mb-8"><button onClick={navigateHome} className="bg-white p-2 rounded-full shadow"><ChevronRight className="rotate-180"/></button><h1 className="text-2xl font-bold">Lojas</h1></div>
-                        <div className="grid md:grid-cols-3 gap-6">{stores.map(s => (<div key={s.id} onClick={()=>navigateToStore(s.id)} className="bg-white p-4 rounded-xl shadow-sm hover:shadow-md cursor-pointer flex gap-4 items-center"><img src={s.logoUrl} className="w-14 h-14 rounded-lg bg-slate-100 object-cover"/><h3 className="font-bold">{s.name}</h3></div>))}</div>
+                <div className="min-h-screen bg-slate-50 p-4 md:p-8">
+                    <div className="max-w-5xl mx-auto">
+                        <div className="flex items-center gap-4 mb-8">
+                            <button onClick={()=>navigate('landing')} className="bg-white p-3 rounded-full shadow-sm hover:bg-slate-100"><ChevronRight className="rotate-180 text-slate-600"/></button>
+                            <h1 className="text-3xl font-bold text-slate-900">Lojas LojinIC</h1>
+                        </div>
+                        <div className="relative mb-8">
+                            <Search className="absolute left-4 top-3.5 text-slate-400" size={20}/>
+                            <input className="w-full pl-12 pr-4 py-3 rounded-xl border-none shadow-sm focus:ring-2 ring-blue-500" placeholder="Buscar loja..." value={term} onChange={e=>setTerm(e.target.value)}/>
+                        </div>
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {filtered.map(s => (
+                                <div key={s.id} onClick={()=>navigate('storefront', s.id)} className="bg-white p-4 rounded-2xl shadow-sm hover:shadow-lg transition cursor-pointer border border-slate-100 flex items-center gap-4 group">
+                                    <img src={s.logoUrl} className="w-16 h-16 rounded-xl bg-slate-100 object-cover group-hover:scale-105 transition"/>
+                                    <div>
+                                        <h3 className="font-bold text-lg text-slate-800 group-hover:text-blue-600 transition">{s.name}</h3>
+                                        <div className="flex items-center gap-2 text-xs font-bold text-slate-400 mt-1">
+                                            {s.paymentStatus==='active' ? <span className="text-green-500 flex items-center gap-1"><CheckCircle2 size={12}/> Verificado</span> : <span>Novo</span>}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             );
