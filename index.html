@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LojinIC - Carregamento Seguro</title>
+    <title>LojinIC - Plataforma de Vendas</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Sistema de Erros Global (Para você ver se algo quebrou) -->
+    <!-- Sistema de Erros -->
     <script>
-        window.onerror = function(msg, url, line, col, error) {
+        window.onerror = function(msg, url, line) {
             const div = document.getElementById('error-display');
             if(div) {
                 div.style.display = 'block';
-                div.innerHTML += `<p><strong>Erro:</strong> ${msg} <br/><small>${url}:${line}</small></p>`;
+                div.innerHTML += `<p>Erro: ${msg}</p>`;
             }
             return false;
         };
@@ -49,16 +49,12 @@
     </style>
 </head>
 <body>
-    <!-- Container de Erros (Aparece só se der ruim) -->
-    <div id="error-display" style="display:none; background:#fee2e2; color:#991b1b; padding:20px; margin:10px; border-radius:8px; font-family:monospace; border:1px solid #ef4444;">
-        <h3 style="font-weight:bold; margin-bottom:10px;">⚠️ Ocorreu um erro no carregamento:</h3>
-    </div>
+    <div id="error-display" style="display:none; background:#fee2e2; color:#991b1b; padding:20px; margin:10px; border-radius:8px;"></div>
 
     <div id="root">
-        <!-- Loading Inicial (HTML Puro enquanto o React carrega) -->
         <div style="height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:sans-serif; color:#64748b;">
             <div class="custom-loader"></div>
-            <p style="margin-top:15px;">Iniciando LojinIC...</p>
+            <p style="margin-top:15px;">Carregando LojinIC...</p>
         </div>
     </div>
 
@@ -81,15 +77,14 @@
             appId: "1:170010365264:web:94e1b369cd38ab9ed2b055"
         };
 
-        // Inicialização segura
+        // Inicialização Segura
         let app, auth, db;
         try {
             app = initializeApp(firebaseConfig);
             auth = getAuth(app);
             db = getDatabase(app);
         } catch (error) {
-            console.error("Erro ao iniciar Firebase:", error);
-            document.getElementById('error-display').innerHTML += `<p>Erro Firebase: ${error.message}</p>`;
+            document.getElementById('error-display').innerHTML = "Erro Firebase: " + error.message;
             document.getElementById('error-display').style.display = 'block';
         }
 
@@ -119,57 +114,48 @@
 
             useEffect(() => {
                 let unsub = () => {};
-                
                 if (auth) {
                     unsub = onAuthStateChanged(auth, (u) => {
                         setUser(u);
                         setLoading(false);
                     });
-                } else {
-                    // Se auth falhou, libera o app deslogado
-                    setLoading(false);
-                }
+                } else { setLoading(false); }
 
-                const params = new URLSearchParams(window.location.search);
-                if (params.get('store')) {
-                    setActiveStoreId(params.get('store'));
-                    setView('storefront');
-                }
+                // Tenta ler a URL inicial apenas, mas não usa pushState depois
+                try {
+                    const params = new URLSearchParams(window.location.search);
+                    const storeIdFromUrl = params.get('store');
+                    if (storeIdFromUrl) {
+                        setActiveStoreId(storeIdFromUrl);
+                        setView('storefront');
+                    }
+                } catch (e) { console.log("Ambiente sem acesso à URL"); }
 
-                // Timeout de segurança visual
-                const timer = setTimeout(() => {
-                    if(loading) setLongLoad(true);
-                }, 3000);
-
+                const timer = setTimeout(() => { if(loading) setLongLoad(true); }, 3000);
                 return () => { unsub(); clearTimeout(timer); };
             }, []);
 
-            const forceEnter = () => {
-                setLoading(false);
-            };
+            const forceEnter = () => setLoading(false);
 
             const showToast = (msg, type='success') => {
                 setToast({msg, type}); setTimeout(() => setToast(null), 4000);
             };
 
+            // NAVEGAÇÃO SEGURA (Sem pushState)
             const navigate = (targetView, storeId = null) => {
                 setView(targetView);
                 if (storeId) setActiveStoreId(storeId);
-                const url = storeId ? `?store=${storeId}` : window.location.pathname;
-                window.history.pushState({}, '', url);
+                // Removido window.history.pushState para evitar erro no blob/iframe
             };
 
             if (loading) return (
                 <div className="h-screen flex flex-col items-center justify-center bg-slate-50 p-4 text-center">
                     <div className="custom-loader mb-4"></div>
-                    <p className="text-slate-500 font-medium mb-4">Conectando ao LojinIC...</p>
+                    <p className="text-slate-500 font-medium mb-4">Conectando...</p>
                     {longLoad && (
-                        <div className="animate-fade-in">
-                            <p className="text-sm text-red-400 mb-2">A conexão está lenta.</p>
-                            <button onClick={forceEnter} className="bg-slate-800 text-white px-6 py-2 rounded-lg font-bold text-sm hover:bg-slate-700">
-                                Entrar Mesmo Assim
-                            </button>
-                        </div>
+                        <button onClick={forceEnter} className="bg-slate-800 text-white px-6 py-2 rounded-lg font-bold text-sm hover:bg-slate-700 animate-fade-in">
+                            Entrar Mesmo Assim
+                        </button>
                     )}
                 </div>
             );
@@ -191,28 +177,29 @@
             );
         }
 
-        // --- TELAS (Simplificadas para garantir renderização) ---
+        // --- COMPONENTES DE TELA ---
 
         function LandingPage({ user, navigate }) {
             return (
                 <div className="min-h-screen bg-white flex flex-col">
                     <header className="bg-white/90 backdrop-blur border-b py-4 px-6 flex justify-between items-center sticky top-0 z-40">
-                        <div className="flex items-center gap-2 font-black text-xl cursor-pointer" onClick={()=>navigate('landing')}>
-                            <ShoppingBag className="text-blue-600" size={24}/> LojinIC
+                        <div className="flex items-center gap-2 font-black text-xl cursor-pointer select-none" onClick={()=>navigate('landing')}>
+                            <div className="bg-slate-900 text-white p-1.5 rounded-lg"><ShoppingBag size={18}/></div> LojinIC
                         </div>
                         <div className="flex gap-2">
                             <button onClick={()=>navigate('directory')} className="text-sm font-bold text-slate-600 hover:text-blue-600 px-3 py-2">Lojas</button>
-                            <button onClick={()=>navigate(user ? 'dashboard' : 'auth')} className="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-bold">
+                            <button onClick={()=>navigate(user ? 'dashboard' : 'auth')} className="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-800 transition">
                                 {user ? 'Painel' : 'Entrar'}
                             </button>
                         </div>
                     </header>
-                    <main className="flex-1 flex flex-col items-center justify-center text-center px-4 py-10">
-                        <h1 className="text-4xl md:text-6xl font-black text-slate-900 mb-6">Venda online <span className="text-blue-600">agora</span>.</h1>
-                        <p className="text-slate-500 mb-8 max-w-md">Crie seu catálogo e receba pedidos no WhatsApp. Rápido, fácil e seguro.</p>
+                    <main className="flex-1 flex flex-col items-center justify-center text-center px-4 py-10 animate-fade-in">
+                        <span className="bg-blue-100 text-blue-700 text-xs font-bold px-4 py-1.5 rounded-full mb-6 uppercase tracking-wide border border-blue-200">Venda Online</span>
+                        <h1 className="text-4xl md:text-6xl font-black text-slate-900 mb-6 tracking-tight">Sua loja pronta <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">em segundos</span>.</h1>
+                        <p className="text-slate-500 mb-8 max-w-md leading-relaxed">Crie seu catálogo e receba pedidos no WhatsApp. Rápido, fácil e seguro.</p>
                         <div className="flex gap-4">
-                            <button onClick={()=>navigate(user ? 'dashboard' : 'auth')} className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-blue-700">Criar Loja</button>
-                            <button onClick={()=>navigate('directory')} className="bg-white text-slate-700 border px-6 py-3 rounded-xl font-bold">Ver Lojas</button>
+                            <button onClick={()=>navigate(user ? 'dashboard' : 'auth')} className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-blue-700 transition transform active:scale-95">Criar Loja</button>
+                            <button onClick={()=>navigate('directory')} className="bg-white text-slate-700 border px-6 py-3 rounded-xl font-bold hover:bg-slate-50 transition">Ver Lojas</button>
                         </div>
                     </main>
                 </div>
@@ -241,7 +228,7 @@
                         showToast("Logado!");
                     }
                     navigate('dashboard');
-                } catch(err) { showToast(err.message, "error"); } 
+                } catch(err) { showToast("Erro: " + err.message, "error"); } 
                 finally { setLoad(false); }
             };
 
@@ -266,18 +253,18 @@
             };
 
             return (
-                <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
+                <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4 animate-fade-in">
                     <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm">
-                        <h2 className="text-2xl font-bold text-center mb-6">{isReg ? 'Criar' : 'Entrar'}</h2>
+                        <h2 className="text-2xl font-bold text-center mb-6 text-slate-800">{isReg ? 'Criar' : 'Entrar'}</h2>
                         <form onSubmit={go} className="space-y-3">
-                            {isReg && <input className="w-full border p-3 rounded-lg" placeholder="Nome Loja" value={f.name} onChange={e=>setF({...f, name:e.target.value})} required/>}
-                            <input className="w-full border p-3 rounded-lg" type="email" placeholder="Email" value={f.email} onChange={e=>setF({...f, email:e.target.value})} required/>
-                            <input className="w-full border p-3 rounded-lg" type="password" placeholder="Senha" value={f.pass} onChange={e=>setF({...f, pass:e.target.value})} required/>
-                            <button disabled={load} className="w-full bg-slate-900 text-white py-3 rounded-lg font-bold">{load?'...':'Confirmar'}</button>
+                            {isReg && <input className="w-full border p-3 rounded-lg outline-none focus:border-blue-500 transition" placeholder="Nome Loja" value={f.name} onChange={e=>setF({...f, name:e.target.value})} required/>}
+                            <input className="w-full border p-3 rounded-lg outline-none focus:border-blue-500 transition" type="email" placeholder="Email" value={f.email} onChange={e=>setF({...f, email:e.target.value})} required/>
+                            <input className="w-full border p-3 rounded-lg outline-none focus:border-blue-500 transition" type="password" placeholder="Senha" value={f.pass} onChange={e=>setF({...f, pass:e.target.value})} required/>
+                            <button disabled={load} className="w-full bg-slate-900 text-white py-3 rounded-lg font-bold hover:bg-slate-800 transition">{load?'...':'Confirmar'}</button>
                         </form>
-                        <button onClick={google} className="w-full border py-3 rounded-lg font-bold mt-4 flex justify-center gap-2"><Globe size={20}/> Google</button>
+                        <button onClick={google} className="w-full border py-3 rounded-lg font-bold mt-4 flex justify-center gap-2 hover:bg-slate-50 transition"><Globe size={20}/> Google</button>
                         <button onClick={()=>setIsReg(!isReg)} className="block mx-auto mt-4 text-blue-600 text-sm hover:underline">{isReg?'Já tenho conta':'Criar conta'}</button>
-                        <button onClick={()=>navigate('landing')} className="block mx-auto mt-2 text-slate-400 text-xs">Cancelar</button>
+                        <button onClick={()=>navigate('landing')} className="block mx-auto mt-2 text-slate-400 text-xs hover:text-slate-600">Cancelar</button>
                     </div>
                 </div>
             );
@@ -289,7 +276,6 @@
             const [prods, setProds] = useState([]);
             const [newP, setNewP] = useState({name:'', price:'', img:''});
             
-            // Admin
             const isAdmin = user.email === ADMIN_EMAIL;
             const [allStores, setAllStores] = useState([]);
             const [pix, setPix] = useState('');
@@ -318,7 +304,6 @@
                 }
             }, [store]);
 
-            // Handlers
             const addP = async (e) => {
                 e.preventDefault();
                 const img = newP.img || `https://source.unsplash.com/featured/?${newP.name},product&t=${Date.now()}`;
@@ -335,27 +320,26 @@
                 }); showToast("Salvo!");
             };
             
-            // Admin Handlers
             const toggleSt = async (id, st) => update(ref(db, `artifacts/${APP_ID}/public/data/stores/${id}`), {paymentStatus: st==='active'?'pending':'active'});
             const savePix = async () => { await update(ref(db, `artifacts/${APP_ID}/public/data/saas_config`), {pixKey: pix}); showToast("Pix Salvo"); };
 
             if(isAdmin) return (
-                <div className="min-h-screen bg-slate-900 text-white p-4">
+                <div className="min-h-screen bg-slate-900 text-white p-4 animate-fade-in">
                     <div className="flex justify-between mb-6 border-b border-slate-700 pb-2">
-                        <h2 className="text-xl font-bold">Admin Master</h2>
-                        <button onClick={()=>signOut(auth)} className="text-red-400 text-sm">Sair</button>
+                        <h2 className="text-xl font-bold flex gap-2 items-center"><LayoutDashboard/> Admin Master</h2>
+                        <button onClick={()=>signOut(auth)} className="text-red-400 text-sm font-bold">Sair</button>
                     </div>
-                    <div className="mb-6 bg-slate-800 p-4 rounded-lg">
-                        <h3 className="font-bold mb-2">Pix Global</h3>
-                        <div className="flex gap-2"><input className="bg-slate-900 border-slate-600 border p-2 rounded w-full" value={pix} onChange={e=>setPix(e.target.value)}/><button onClick={savePix} className="bg-blue-600 px-4 rounded">Salvar</button></div>
+                    <div className="mb-6 bg-slate-800 p-4 rounded-lg border border-slate-700">
+                        <h3 className="font-bold mb-2 flex items-center gap-2"><Wallet size={16}/> Pix Global</h3>
+                        <div className="flex gap-2"><input className="bg-slate-900 border-slate-600 border p-2 rounded w-full text-white" value={pix} onChange={e=>setPix(e.target.value)}/><button onClick={savePix} className="bg-blue-600 px-4 rounded font-bold hover:bg-blue-500">Salvar</button></div>
                     </div>
                     <div className="space-y-2">
                         {allStores.map(s => (
-                            <div key={s.id} className="bg-slate-800 p-3 rounded flex justify-between items-center">
-                                <div><b>{s.name}</b> <span className="text-xs ml-2 opacity-70">{s.paymentStatus}</span></div>
+                            <div key={s.id} className="bg-slate-800 p-3 rounded-lg flex justify-between items-center border border-slate-700">
+                                <div><b>{s.name}</b> <span className={`text-xs ml-2 font-bold uppercase ${s.paymentStatus==='active'?'text-green-400':'text-amber-500'}`}>{s.paymentStatus}</span></div>
                                 <div className="flex gap-2">
-                                    <button onClick={()=>navigate('storefront', s.id)}><ExternalLink size={16}/></button>
-                                    <button onClick={()=>toggleSt(s.id, s.paymentStatus)} className="text-xs border px-2 py-1 rounded">{s.paymentStatus==='active'?'Bloquear':'Aprovar'}</button>
+                                    <button onClick={()=>navigate('storefront', s.id)} className="p-1 bg-slate-700 rounded hover:bg-slate-600"><ExternalLink size={16}/></button>
+                                    <button onClick={()=>toggleSt(s.id, s.paymentStatus)} className={`text-xs border px-2 py-1 rounded font-bold ${s.paymentStatus==='active'?'border-red-500 text-red-400':'border-green-500 text-green-400'}`}>{s.paymentStatus==='active'?'Bloquear':'Aprovar'}</button>
                                 </div>
                             </div>
                         ))}
@@ -363,49 +347,55 @@
                 </div>
             );
 
-            if(!store) return <div className="p-10 text-center">Carregando loja...</div>;
+            if(!store) return <div className="p-10 text-center text-slate-400">Carregando loja...</div>;
 
             return (
-                <div className="min-h-screen bg-slate-50 pb-20">
-                    <header className="bg-white border-b p-4 flex justify-between items-center sticky top-0 z-30">
-                        <div className="flex items-center gap-2"><img src={store.logoUrl} className="w-8 h-8 rounded"/> <span className="font-bold text-sm">{store.name}</span></div>
-                        <div className="flex gap-2"><button onClick={()=>navigate('storefront', store.id)} className="text-blue-600 text-sm font-bold">Ver Loja</button><button onClick={()=>signOut(auth)}><LogOut size={18}/></button></div>
+                <div className="min-h-screen bg-slate-50 pb-20 animate-fade-in">
+                    <header className="bg-white border-b p-4 flex justify-between items-center sticky top-0 z-30 shadow-sm">
+                        <div className="flex items-center gap-2"><img src={store.logoUrl} className="w-8 h-8 rounded-lg object-cover"/> <span className="font-bold text-sm">{store.name}</span></div>
+                        <div className="flex gap-2"><button onClick={()=>navigate('storefront', store.id)} className="text-blue-600 text-sm font-bold flex items-center gap-1 hover:bg-blue-50 px-2 py-1 rounded"><ExternalLink size={14}/> Ver Loja</button><button onClick={()=>signOut(auth)}><LogOut size={18} className="text-slate-400 hover:text-red-500"/></button></div>
                     </header>
                     <div className="p-4 max-w-2xl mx-auto">
-                        <div className="flex gap-2 mb-4 overflow-x-auto">
+                        <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
                             {[{k:'prod',l:'Produtos'},{k:'sub',l:'Assinatura'},{k:'conf',l:'Ajustes'}].map(x=>(
-                                <button key={x.k} onClick={()=>setTab(x.k)} className={`px-4 py-2 rounded-full text-sm font-bold ${tab===x.k?'bg-slate-900 text-white':'bg-white border'}`}>{x.l}</button>
+                                <button key={x.k} onClick={()=>setTab(x.k)} className={`px-4 py-2 rounded-full text-sm font-bold transition ${tab===x.k?'bg-slate-900 text-white shadow-lg':'bg-white border hover:bg-slate-50'}`}>{x.l}</button>
                             ))}
                         </div>
 
                         {tab==='prod' && (
-                            store.paymentStatus!=='active' ? <div className="bg-white p-6 rounded-xl text-center shadow"><Lock className="mx-auto mb-2 text-amber-500"/><p>Loja Bloqueada. Pague a assinatura.</p></div> :
-                            <div>
-                                <form onSubmit={addP} className="bg-white p-4 rounded-xl shadow mb-4 grid grid-cols-2 gap-2">
-                                    <input className="border p-2 rounded col-span-2" placeholder="Nome" value={newP.name} onChange={e=>setNewP({...newP, name:e.target.value})} required/>
-                                    <input className="border p-2 rounded" type="number" placeholder="R$" value={newP.price} onChange={e=>setNewP({...newP, price:e.target.value})} required/>
-                                    <input className="border p-2 rounded" placeholder="Img URL" value={newP.img} onChange={e=>setNewP({...newP, img:e.target.value})}/>
-                                    <button className="bg-blue-600 text-white col-span-2 py-2 rounded font-bold">Adicionar</button>
+                            store.paymentStatus!=='active' ? <div className="bg-white p-8 rounded-xl text-center shadow border border-slate-100"><Lock className="mx-auto mb-2 text-amber-500" size={32}/><h3 className="font-bold text-lg">Loja Bloqueada</h3><p className="text-slate-500 text-sm mb-4">Pague a assinatura para desbloquear.</p><button onClick={()=>setTab('sub')} className="text-blue-600 font-bold underline">Resolver</button></div> :
+                            <div className="animate-slide-up">
+                                <form onSubmit={addP} className="bg-white p-4 rounded-xl shadow mb-4 grid grid-cols-2 gap-3 border border-slate-100">
+                                    <input className="border p-2 rounded-lg col-span-2 outline-none focus:border-blue-500" placeholder="Nome do Produto" value={newP.name} onChange={e=>setNewP({...newP, name:e.target.value})} required/>
+                                    <input className="border p-2 rounded-lg outline-none focus:border-blue-500" type="number" placeholder="Preço (R$)" value={newP.price} onChange={e=>setNewP({...newP, price:e.target.value})} required/>
+                                    <input className="border p-2 rounded-lg outline-none focus:border-blue-500" placeholder="Link Imagem (Opcional)" value={newP.img} onChange={e=>setNewP({...newP, img:e.target.value})}/>
+                                    <button className="bg-slate-900 text-white col-span-2 py-2.5 rounded-lg font-bold hover:bg-slate-800 transition">Adicionar Produto</button>
                                 </form>
-                                {prods.map(p=>(<div key={p.id} className="bg-white p-3 rounded-xl shadow mb-2 flex items-center gap-3"><img src={p.image} className="w-12 h-12 rounded object-cover"/><div className="flex-1"><b>{p.name}</b><div className="text-green-600 text-sm">{formatBRL(p.price)}</div></div><button onClick={()=>delP(p.id)}><Trash2 size={16} class="text-red-400"/></button></div>))}
+                                <div className="space-y-3">
+                                    {prods.map(p=>(<div key={p.id} className="bg-white p-3 rounded-xl shadow-sm border border-slate-100 flex items-center gap-3"><img src={p.image} className="w-14 h-14 rounded-lg object-cover"/><div className="flex-1"><b className="text-slate-800">{p.name}</b><div className="text-green-600 font-bold text-sm">{formatBRL(p.price)}</div></div><button onClick={()=>delP(p.id)} className="p-2 bg-red-50 text-red-400 rounded-lg hover:bg-red-100"><Trash2 size={16}/></button></div>))}
+                                    {prods.length===0 && <div className="text-center text-slate-400 py-8">Nenhum produto cadastrado.</div>}
+                                </div>
                             </div>
                         )}
 
                         {tab==='sub' && (
-                            <div className="bg-white p-6 rounded-xl shadow text-center">
-                                <Wallet className="mx-auto mb-2 text-blue-600" size={32}/>
-                                <h3 className="font-bold text-lg">Assinatura: {store.paymentStatus==='active'?'ATIVA':'PENDENTE'}</h3>
-                                <div className="bg-slate-100 p-3 rounded my-4 break-all font-mono text-sm">{pix||"Chave não definida"}</div>
-                                <p className="text-xs text-slate-500">Pague via Pix e contate o admin.</p>
+                            <div className="bg-white p-6 rounded-xl shadow text-center border border-slate-100 animate-slide-up">
+                                <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3"><Wallet size={24}/></div>
+                                <h3 className="font-bold text-lg">Assinatura: <span className={store.paymentStatus==='active'?'text-green-600':'text-amber-500'}>{store.paymentStatus==='active'?'ATIVA':'PENDENTE'}</span></h3>
+                                <div className="bg-slate-50 p-4 rounded-xl border my-4">
+                                    <p className="text-xs text-slate-400 uppercase font-bold mb-2">Chave Pix</p>
+                                    <div onClick={()=>{copyText(pix); showToast("Copiado!")}} className="font-mono text-sm bg-white p-2 rounded border cursor-pointer hover:border-blue-400 flex items-center justify-center gap-2">{pix||"Aguardando Admin"} <Copy size={14}/></div>
+                                </div>
+                                <p className="text-xs text-slate-500">Realize o pagamento e envie o comprovante ao suporte.</p>
                             </div>
                         )}
 
                         {tab==='conf' && (
-                            <form onSubmit={saveConf} className="bg-white p-6 rounded-xl shadow space-y-3">
-                                <div><label className="text-xs font-bold">Nome</label><input name="name" defaultValue={store.name} className="w-full border p-2 rounded"/></div>
-                                <div><label className="text-xs font-bold">WhatsApp</label><input name="whatsapp" defaultValue={store.whatsapp} className="w-full border p-2 rounded"/></div>
-                                <div><label className="text-xs font-bold">Cor</label><input name="color" type="color" defaultValue={store.themeColor} className="w-full h-10 rounded"/></div>
-                                <button className="w-full bg-slate-900 text-white py-3 rounded font-bold">Salvar</button>
+                            <form onSubmit={saveConf} className="bg-white p-6 rounded-xl shadow space-y-4 border border-slate-100 animate-slide-up">
+                                <div><label className="text-xs font-bold text-slate-400 uppercase">Nome</label><input name="name" defaultValue={store.name} className="w-full border p-2 rounded-lg outline-none focus:border-blue-500"/></div>
+                                <div><label className="text-xs font-bold text-slate-400 uppercase">WhatsApp (Só números)</label><input name="whatsapp" defaultValue={store.whatsapp} className="w-full border p-2 rounded-lg outline-none focus:border-blue-500"/></div>
+                                <div><label className="text-xs font-bold text-slate-400 uppercase">Cor</label><div className="flex items-center gap-2 bg-slate-50 p-2 rounded-lg border"><input name="color" type="color" defaultValue={store.themeColor} className="w-8 h-8 rounded cursor-pointer border-none bg-transparent"/><span className="text-sm text-slate-500">Cor do Tema</span></div></div>
+                                <button className="w-full bg-slate-900 text-white py-3 rounded-lg font-bold hover:bg-slate-800 transition">Salvar Alterações</button>
                             </form>
                         )}
                     </div>
@@ -437,43 +427,52 @@
                 setC([]); setCartOpen(false);
             };
 
-            if(!s) return <div className="p-10 text-center">Carregando...</div>;
+            if(!s) return <div className="p-10 text-center bg-slate-50 h-screen flex items-center justify-center"><div className="custom-loader"></div></div>;
 
             return (
-                <div className="min-h-screen bg-slate-50 font-sans pb-20">
+                <div className="min-h-screen bg-slate-50 font-sans pb-20 animate-fade-in">
                     <nav className="bg-white sticky top-0 z-30 px-4 h-16 flex justify-between items-center shadow-sm">
-                        <div className="flex items-center gap-2"><img src={s.logoUrl} className="w-8 h-8 rounded"/><span className="font-bold">{s.name}</span></div>
+                        <div className="flex items-center gap-2"><img src={s.logoUrl} className="w-8 h-8 rounded-lg object-cover"/><span className="font-bold text-slate-800">{s.name}</span></div>
                         <div className="flex gap-2">
-                            <button onClick={()=>navigate('landing')}><X/></button>
-                            <button onClick={()=>setCartOpen(true)} className="relative"><ShoppingBag/><span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">{c.length}</span></button>
+                            <button onClick={()=>navigate('landing')} className="p-2 bg-slate-100 rounded-full"><X size={20} className="text-slate-500"/></button>
+                            <button onClick={()=>setCartOpen(true)} className="relative p-2 bg-slate-100 rounded-full"><ShoppingBag size={20} className="text-slate-700"/><span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">{c.length}</span></button>
                         </div>
                     </nav>
                     <div style={{backgroundColor:s.themeColor}} className="h-32 w-full"></div>
                     <div className="px-4 -mt-10 grid grid-cols-2 gap-4">
                         {p.map(x=>(
-                            <div key={x.id} className="bg-white rounded-xl shadow overflow-hidden flex flex-col">
-                                <img src={x.image} className="h-32 object-cover"/>
+                            <div key={x.id} className="bg-white rounded-xl shadow overflow-hidden flex flex-col border border-slate-100 hover:shadow-md transition">
+                                <img src={x.image} className="h-32 object-cover w-full"/>
                                 <div className="p-3 flex-1 flex flex-col">
-                                    <div className="font-bold text-sm leading-tight mb-1">{x.name}</div>
-                                    <div className="mt-auto flex justify-between items-center pt-2 border-t">
-                                        <span className="font-bold">{formatBRL(x.price)}</span>
-                                        <button onClick={()=>add(x)} className="bg-slate-900 text-white p-1.5 rounded"><Plus size={16}/></button>
+                                    <div className="font-bold text-sm leading-tight mb-1 text-slate-800">{x.name}</div>
+                                    <div className="mt-auto flex justify-between items-center pt-2 border-t border-slate-50">
+                                        <span className="font-bold text-slate-900">{formatBRL(x.price)}</span>
+                                        <button onClick={()=>add(x)} style={{backgroundColor:s.themeColor}} className="text-white p-1.5 rounded-lg shadow active:scale-95 transition"><Plus size={16}/></button>
                                     </div>
                                 </div>
                             </div>
                         ))}
+                        {p.length===0 && <div className="col-span-2 text-center py-10 text-slate-400 bg-white rounded-xl shadow-sm">Loja vazia.</div>}
                     </div>
                     {cartOpen && (
-                        <div className="fixed inset-0 z-50 flex justify-end">
-                            <div className="absolute inset-0 bg-black/30" onClick={()=>setCartOpen(false)}></div>
-                            <div className="bg-white w-full max-w-sm z-10 h-full flex flex-col p-4">
-                                <div className="flex justify-between border-b pb-4 mb-4"><h2 className="font-bold">Carrinho</h2><button onClick={()=>setCartOpen(false)}><X/></button></div>
-                                <div className="flex-1 overflow-y-auto space-y-2">
-                                    {c.map((x,i)=>(<div key={i} className="flex justify-between border p-2 rounded"><span>{x.name}</span><button onClick={()=>rem(i)}><Trash2 size={16} className="text-red-500"/></button></div>))}
+                        <div className="fixed inset-0 z-50 flex justify-end isolate">
+                            <div className="absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity" onClick={()=>setCartOpen(false)}></div>
+                            <div className="bg-white w-full max-w-sm z-10 h-full flex flex-col p-0 animate-slide-up">
+                                <div className="flex justify-between items-center p-4 border-b bg-slate-50"><h2 className="font-bold text-lg flex gap-2 items-center"><ShoppingBag size={20}/> Carrinho</h2><button onClick={()=>setCartOpen(false)} className="p-1 hover:bg-slate-200 rounded-full"><X/></button></div>
+                                <div className="flex-1 overflow-y-auto space-y-3 p-4">
+                                    {c.length===0 ? <div className="text-center text-slate-400 mt-10">Carrinho vazio.</div> : 
+                                    c.map((x,i)=>(<div key={i} className="flex justify-between border p-3 rounded-xl items-center shadow-sm bg-white">
+                                        <div className="flex items-center gap-3"><img src={x.image} className="w-10 h-10 rounded object-cover"/><div><div className="text-sm font-bold">{x.name}</div><div className="text-xs text-slate-500">{formatBRL(x.price)}</div></div></div>
+                                        <button onClick={()=>rem(i)} className="text-red-400 p-2 hover:bg-red-50 rounded"><Trash2 size={16}/></button>
+                                    </div>))}
                                 </div>
-                                <div className="mt-4 border-t pt-4">
-                                    <div className="flex justify-between font-bold text-lg mb-4"><span>Total</span><span>{formatBRL(tot)}</span></div>
-                                    {c.length>0 && <div className="space-y-2"><input className="border p-2 w-full rounded" placeholder="Nome" onChange={e=>setChk({...chk,n:e.target.value})}/><select className="border p-2 w-full rounded" onChange={e=>setChk({...chk,m:e.target.value})}><option>Pix</option><option>Dinheiro</option></select><button onClick={end} className="w-full bg-green-600 text-white py-3 rounded font-bold">Enviar Pedido</button></div>}
+                                <div className="p-4 border-t bg-slate-50">
+                                    <div className="flex justify-between font-bold text-xl mb-4 text-slate-800"><span>Total</span><span>{formatBRL(tot)}</span></div>
+                                    {c.length>0 && <div className="space-y-3">
+                                        <input className="border p-3 w-full rounded-xl outline-none focus:border-blue-500" placeholder="Seu Nome" onChange={e=>setChk({...chk,n:e.target.value})}/>
+                                        <select className="border p-3 w-full rounded-xl bg-white" onChange={e=>setChk({...chk,m:e.target.value})}><option>Pix</option><option>Dinheiro</option><option>Cartão</option></select>
+                                        <button onClick={end} className="w-full bg-green-500 text-white py-3.5 rounded-xl font-bold shadow-lg hover:bg-green-600 transition flex justify-center gap-2 items-center"><MessageCircle size={20}/> Enviar Pedido</button>
+                                    </div>}
                                 </div>
                             </div>
                         </div>
@@ -488,10 +487,15 @@
                 if(db) onValue(ref(db, `artifacts/${APP_ID}/public/data/stores`), s => setList(snapshotToArray(s)));
             }, []);
             return (
-                <div className="min-h-screen bg-slate-50 p-4">
-                    <div className="flex gap-4 mb-6 items-center"><button onClick={()=>navigate('landing')} className="bg-white p-2 rounded shadow"><ChevronRight className="rotate-180"/></button><h1 className="text-2xl font-bold">Lojas</h1></div>
+                <div className="min-h-screen bg-slate-50 p-4 animate-fade-in">
+                    <div className="flex gap-4 mb-6 items-center"><button onClick={()=>navigate('landing')} className="bg-white p-2 rounded-lg shadow text-slate-600"><ChevronRight className="rotate-180"/></button><h1 className="text-2xl font-bold text-slate-800">Lojas</h1></div>
                     <div className="grid grid-cols-2 gap-4">
-                        {list.map(s=>(<div key={s.id} onClick={()=>navigate('storefront', s.id)} className="bg-white p-4 rounded-xl shadow flex flex-col items-center text-center cursor-pointer"><img src={s.logoUrl} className="w-16 h-16 rounded mb-2"/><b>{s.name}</b></div>))}
+                        {list.map(s=>(<div key={s.id} onClick={()=>navigate('storefront', s.id)} className="bg-white p-4 rounded-2xl shadow-sm hover:shadow-md transition flex flex-col items-center text-center cursor-pointer border border-slate-100 group">
+                            <img src={s.logoUrl} className="w-16 h-16 rounded-xl mb-3 bg-slate-100 object-cover group-hover:scale-105 transition duration-500"/>
+                            <b className="text-slate-800">{s.name}</b>
+                            {s.paymentStatus==='active' && <span className="text-[10px] text-green-600 bg-green-50 px-2 py-0.5 rounded mt-1 font-bold">Verificado</span>}
+                        </div>))}
+                        {list.length===0 && <div className="col-span-2 text-center text-slate-400 py-10">Nenhuma loja encontrada.</div>}
                     </div>
                 </div>
             );
